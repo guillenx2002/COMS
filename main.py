@@ -1,35 +1,28 @@
-import discord
-import os
-from discord.ext import commands
-from mcrcon import MCRcon
-from dotenv import load_dotenv
-import google.generativeai as genai
-
-# Load settings from .env
-load_dotenv()
-TOKEN = os.getenv('BOT_TOKEN')
-RCON_IP = os.getenv('RCON_IP')
-RCON_PORT = int(os.getenv('RCON_PORT'))
-RCON_PASS = os.getenv('RCON_PASS')
-
-# Bot setup
-intents = discord.Intents.default()
-intents.message_content = True
-bot = commands.Bot(command_prefix='!', intents=intents)
-
 @bot.event
-async def on_ready():
-    print(f'DRAVIK Assistant is online as {bot.user}')
+async def on_message(message):
+    # 1. Ignore bot's own messages
+    if message.author == bot.user:
+        return
 
-@bot.command()
-@commands.is_owner() # Only you can run this
-async def rcon(ctx, *, command):
-    try:
-        with MCRcon(RCON_IP, RCON_PASS, port=RCON_PORT) as mcr:
-            response = mcr.command(command)
-           # Use this exact line to ensure the quotes are closed properly
-        await ctx.send(f"Server response: ```{response}```")
-    except Exception as e:
-        await ctx.send(f"Error connecting to server: {e}")
+    # 2. Your ID
+    MY_ID = 1330858852526067732
 
-bot.run(TOKEN)
+    # 3. Check for mention AND permission
+    if bot.user.mentioned_in(message):
+        if message.author.id == MY_ID:
+            # Extract the command (everything after the mention)
+            content = message.content.replace(f'<@!{bot.user.id}>', '').replace(f'<@{bot.user.id}>', '').strip()
+            
+            if content:
+                # Send to RCON
+                try:
+                    with MCRcon(RCON_IP, RCON_PASS, port=RCON_PORT) as mcr:
+                        response = mcr.command(content)
+                    await message.channel.send(f"Result: ```{response}```")
+                except Exception as e:
+                    await message.channel.send(f"Error: {e}")
+        else:
+            await message.channel.send("Access Denied.")
+
+    # Allow other commands (like !rcon) to still work
+    await bot.process_commands(message)
