@@ -40,8 +40,7 @@ async def on_message(message):
                 try:
                     with MCRcon(RCON_IP, RCON_PASS, port=RCON_PORT) as mcr:
                         response = mcr.command(content)
-                    await message.channel.send(f"Result: ```{response}
-```")
+                    await message.channel.send(f"Result: ```{response}```")
                 except Exception as e:
                     await message.channel.send(f"Error: {e}")
         else:
